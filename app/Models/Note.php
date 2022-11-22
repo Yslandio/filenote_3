@@ -15,4 +15,8 @@ class Note extends Model
         'content',
         'color',
     ];
+
+    public function files() {
+        return $this->hasMany(File::class);
+    }
 }

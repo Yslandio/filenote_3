@@ -2,14 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\File;
 use App\Models\Note;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class NoteController extends Controller
 {
-    public function dashboard() {
-        $notes = Note::where('user_id', Auth::user()->id)->get();
+    public function dashboard(Request $request) {
+        if ($request->search) {
+            $notes = Note::where('user_id', Auth::user()->id)
+                ->where('title', 'LIKE', '%'.$request->search.'%')
+                ->orWhere('content', 'LIKE', '%'.$request->search.'%')
+                ->paginate(1);
+        } else {
+            $notes = Note::where('user_id', Auth::user()->id)->paginate(1);
+        }
+
         return view('dashboard', ['notes' => $notes]);
     }
 
@@ -44,5 +54,34 @@ class NoteController extends Controller
     public function delete(Request $request) {
         Note::find($request->id)->delete();
         return back()->with('success', 'Anotação excluída com sucesso!');
+    }
+
+    public function uploadFile(Request $request) {
+        $request->validate([
+            'note_id' => 'required',
+            'file' => ['required', 'file', 'max:4096'],
+        ]);
+
+        $file = $request->file->store('files');
+
+        File::create([
+            'note_id' => $request->note_id,
+            'directory' => $file
+        ]);
+
+        return back();
+    }
+
+    public function deleteFile(Request $request) {
+        $request->validate([
+            'id' => 'required'
+        ]);
+
+        if (Storage::exists($request->directory))
+            Storage::delete($request->directory); // Exclusão de arquivo
+
+        File::find($request->id)->delete();
+
+        return back();
     }
 }

@@ -13,4 +13,8 @@ class File extends Model
         'note_id',
         'directory',
     ];
+
+    public function note() {
+        return $this->belongsTo(Note::class);
+    }
 }
